@@ -39,7 +39,6 @@ public class KeyValueService {
                 .collect(Collectors.toList());
 
         Optional<DynamoNode> mayBeFirstNode = nodes.stream().filter(DynamoNode::isCoordinator).findFirst();
-
         if (mayBeFirstNode.isPresent()) {
             DynamoNode node = mayBeFirstNode.get();
             int vectorIndex = nodes.indexOf(node);
@@ -62,18 +61,20 @@ public class KeyValueService {
     public VectorClock createVectorClockForFile(MultipartFile file, String folder, int vectorIndex) {
         File dir = new File(System.getProperty("user.dir") + File.separator + folder);
         File vectorClockData = new File(dir.getAbsolutePath() + File.separator + "vector_clock_" + file.getOriginalFilename());
-        try (BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(vectorClockData))) {
+        try  {
             VectorClock vectorClock;
             if (vectorClockData.exists()) {
                 BufferedReader bufferedReader = new BufferedReader(new FileReader(vectorClockData));
-                vectorClock = new VectorClock(bufferedReader.readLine());
-                vectorClock.incrementClockAtIndex(vectorIndex);
-                stream.write(vectorClock.toString().getBytes());
+                String clockAsString = bufferedReader.readLine();
+                vectorClock = new VectorClock(clockAsString);
+                bufferedReader.close();
             } else {
                 vectorClock = new VectorClock();
-                vectorClock.incrementClockAtIndex(vectorIndex);
-                stream.write(vectorClock.toString().getBytes());
             }
+            BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(vectorClockData));
+            vectorClock.incrementClockAtIndex(vectorIndex);
+            stream.write(vectorClock.toString().getBytes());
+            stream.close();
             return vectorClock;
         } catch (Exception e) {
             e.printStackTrace();
@@ -174,7 +175,28 @@ public class KeyValueService {
             filesWithVectorClocks.putAll(retrieveFromReplicas(fileName, nodes, Quorum.getReadQuorum()));
         }
 
-        List<FileWithVectorClock> fileWithVectorClocks = filesWithVectorClocks.keySet().stream().toList();
+        List<FileWithVectorClock> fileWithVectorClocks = filesWithVectorClocks.keySet().stream()
+                .sorted(Comparator.comparing(FileWithVectorClock::getVectorClock))
+                .toList();
+        List<DynamoNode> nodesLaggingBehind = new ArrayList<>();
+        FileWithVectorClock clockOne = fileWithVectorClocks.get(0);
+        FileWithVectorClock clockTwo = fileWithVectorClocks.get(1);
+        FileWithVectorClock clockThree = fileWithVectorClocks.get(2);
+
+        if (clockOne.getVectorClock().compareTo(clockTwo.getVectorClock()) < 0) {
+            nodesLaggingBehind.add(filesWithVectorClocks.get(clockOne));
+            if (clockTwo.getVectorClock().compareTo(clockThree.getVectorClock()) < 0) {
+                nodesLaggingBehind.add(filesWithVectorClocks.get(clockTwo));
+            }
+        } else if (clockOne.getVectorClock().compareTo(clockTwo.getVectorClock()) == 0 &&
+            clockTwo.getVectorClock().compareTo(clockThree.getVectorClock()) < 0) {
+            nodesLaggingBehind.add(filesWithVectorClocks.get(clockOne));
+            nodesLaggingBehind.add(filesWithVectorClocks.get(clockTwo));
+        }
+
+        System.out.println("vector clocks" + fileWithVectorClocks);
+        MultipartFile file = new CommonMultipartFile(clockThree.getFile(), fileName);
+        storeToReplicas(file, nodesLaggingBehind, nodesLaggingBehind.size(), clockThree.getVectorClock());
 
         //TODO: fix this response
         return ResponseEntity.ok(fileWithVectorClocks);

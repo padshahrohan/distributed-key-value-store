@@ -41,8 +41,6 @@ public class DynamoServerStarter implements ApplicationListener<ApplicationReady
                 }
                 isCoordinator = false;
             }
-            System.out.println(hashingManager.getRing());
-            System.out.println(hashingManager.getRing().size());
         } catch (Exception e) {
             System.out.println("Unable to connect to dynamo nodes");
             System.exit(0);

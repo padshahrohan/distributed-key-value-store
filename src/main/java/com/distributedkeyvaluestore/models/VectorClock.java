@@ -1,8 +1,10 @@
 package com.distributedkeyvaluestore.models;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Comparator;
 
-public class VectorClock {
+public class VectorClock implements Comparable<VectorClock> {
 
     private final int[] clock = new int[Quorum.getReplicas()];
 
@@ -15,6 +17,7 @@ public class VectorClock {
         int i=0;
         while (i < Quorum.getReplicas()) {
             clock[i] = Integer.parseInt(individualClock[i]);
+            i++;
         }
     }
 
@@ -44,7 +47,8 @@ public class VectorClock {
     //0 is equal
     //-1 is small
     //1 is greater
-    public int compare(VectorClock vectorClock) {
+    @Override
+    public int compareTo(@NotNull VectorClock vectorClock) {
         int[] thatClock = vectorClock.getClock();
         int compare = 0;
 
@@ -57,5 +61,4 @@ public class VectorClock {
         }
         return compare;
     }
-
 }
