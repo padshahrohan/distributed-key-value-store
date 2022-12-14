@@ -175,28 +175,47 @@ public class KeyValueService {
             filesWithVectorClocks.putAll(retrieveFromReplicas(fileName, nodes, Quorum.getReadQuorum()));
         }
 
+        System.out.println(filesWithVectorClocks);
+
         List<FileWithVectorClock> fileWithVectorClocks = filesWithVectorClocks.keySet().stream()
                 .sorted(Comparator.comparing(FileWithVectorClock::getVectorClock))
                 .toList();
         List<DynamoNode> nodesLaggingBehind = new ArrayList<>();
-        FileWithVectorClock clockOne = fileWithVectorClocks.get(0);
-        FileWithVectorClock clockTwo = fileWithVectorClocks.get(1);
-        FileWithVectorClock clockThree = fileWithVectorClocks.get(2);
+        FileWithVectorClock latestCopy;
 
-        if (clockOne.getVectorClock().compareTo(clockTwo.getVectorClock()) < 0) {
-            nodesLaggingBehind.add(filesWithVectorClocks.get(clockOne));
-            if (clockTwo.getVectorClock().compareTo(clockThree.getVectorClock()) < 0) {
+        int size = fileWithVectorClocks.size();
+        if (size == 3) {
+            FileWithVectorClock clockOne = fileWithVectorClocks.get(0);
+            FileWithVectorClock clockTwo = fileWithVectorClocks.get(1);
+            FileWithVectorClock clockThree = fileWithVectorClocks.get(2);
+            latestCopy = clockThree;
+
+            if (clockOne.getVectorClock().compareTo(clockTwo.getVectorClock()) < 0) {
+                nodesLaggingBehind.add(filesWithVectorClocks.get(clockOne));
+                if (clockTwo.getVectorClock().compareTo(clockThree.getVectorClock()) < 0) {
+                    nodesLaggingBehind.add(filesWithVectorClocks.get(clockTwo));
+                }
+            } else if (clockOne.getVectorClock().compareTo(clockTwo.getVectorClock()) == 0 &&
+                    clockTwo.getVectorClock().compareTo(clockThree.getVectorClock()) < 0) {
+                nodesLaggingBehind.add(filesWithVectorClocks.get(clockOne));
                 nodesLaggingBehind.add(filesWithVectorClocks.get(clockTwo));
             }
-        } else if (clockOne.getVectorClock().compareTo(clockTwo.getVectorClock()) == 0 &&
-            clockTwo.getVectorClock().compareTo(clockThree.getVectorClock()) < 0) {
-            nodesLaggingBehind.add(filesWithVectorClocks.get(clockOne));
-            nodesLaggingBehind.add(filesWithVectorClocks.get(clockTwo));
+        } else if (size == 2) {
+            FileWithVectorClock clockOne = fileWithVectorClocks.get(0);
+            FileWithVectorClock clockTwo = fileWithVectorClocks.get(1);
+            latestCopy = clockTwo;
+
+            if (clockOne.getVectorClock().compareTo(clockTwo.getVectorClock()) < 0) {
+                nodesLaggingBehind.add(filesWithVectorClocks.get(clockOne));
+            }
+        } else  {
+            latestCopy = fileWithVectorClocks.get(0);
         }
 
         System.out.println("vector clocks" + fileWithVectorClocks);
-        MultipartFile file = new CommonMultipartFile(clockThree.getFile(), fileName);
-        storeToReplicas(file, nodesLaggingBehind, nodesLaggingBehind.size(), clockThree.getVectorClock());
+        System.out.println(nodesLaggingBehind);
+        MultipartFile file = new CommonMultipartFile(latestCopy.getFile(), fileName);
+        storeToReplicas(file, nodesLaggingBehind, nodesLaggingBehind.size(), latestCopy.getVectorClock());
 
         //TODO: fix this response
         return ResponseEntity.ok(fileWithVectorClocks);
