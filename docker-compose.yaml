@@ -1,0 +1,25 @@
+version: "3"
+services:
+  one:
+    networks:
+      storage-net:
+    image: amazoncorretto:11
+
+  two:
+    networks:
+      storage-net:
+    image: amazoncorretto:11
+
+  three:
+    networks:
+      storage-net:
+    image: amazoncorretto:11
+
+  four:
+    networks:
+      storage-net:
+    image: amazoncorretto:11
+
+networks:
+  storage-net:
+    driver: bridge
