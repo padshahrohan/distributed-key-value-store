@@ -31,13 +31,13 @@ import java.util.TreeMap;
  * @param <T> An object that extends the {@link Node} interface
  */
 @Component
-public class HashingManager<T extends Node> {
+public class HashManager<T extends Node> {
 
     private final TreeMap<Long, VirtualNode<T>> ring;
     private final HashFunction hashFunction;
     private final int vNodeCount;
 
-    public HashingManager(@Nonnull HashFunction hashFunction) {
+    public HashManager(@Nonnull HashFunction hashFunction) {
         this.hashFunction = hashFunction;
         this.ring = new TreeMap<>();
 

@@ -1,8 +1,7 @@
 package com.distributedkeyvaluestore;
 
 import com.distributedkeyvaluestore.client.HealthChecker;
-import com.distributedkeyvaluestore.client.URIHelper;
-import com.distributedkeyvaluestore.consistenthash.HashingManager;
+import com.distributedkeyvaluestore.consistenthash.HashManager;
 import com.distributedkeyvaluestore.models.DynamoNode;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.boot.ApplicationArguments;
@@ -15,12 +14,12 @@ public class DynamoServerStarter implements ApplicationListener<ApplicationReady
 
     private final ApplicationArguments appArgs;
     private final HealthChecker checker;
-    private final HashingManager<DynamoNode> hashingManager;
+    private final HashManager<DynamoNode> hashManager;
 
-    public DynamoServerStarter(ApplicationArguments appArgs, HealthChecker checker, HashingManager<DynamoNode> hashingManager) {
+    public DynamoServerStarter(ApplicationArguments appArgs, HealthChecker checker, HashManager<DynamoNode> hashManager) {
         this.appArgs = appArgs;
         this.checker = checker;
-        this.hashingManager = hashingManager;
+        this.hashManager = hashManager;
     }
 
     @Override
@@ -35,7 +34,7 @@ public class DynamoServerStarter implements ApplicationListener<ApplicationReady
                 String address = arg.split("_")[1];
                 String nodeNumber = arg.split("_")[0];
                 DynamoNode node = new DynamoNode(address, isCoordinator, Integer.parseInt(nodeNumber));
-                hashingManager.addNode(node);
+                hashManager.addNode(node);
                 if (!node.isCoordinator()) {
                     //checker.check(URIHelper.createURI(address));
                 }

@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
  */
 
 @Component
-public class CityHash implements HashFunction {
+public class CityHashFunction implements HashFunction {
 
     private static final long k0 = 0xc3a5c85c97cb3127L;
     private static final long k1 = 0xb492b66fbe98f273L;

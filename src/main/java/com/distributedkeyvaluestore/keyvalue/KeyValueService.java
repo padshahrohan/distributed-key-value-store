@@ -2,7 +2,7 @@ package com.distributedkeyvaluestore.keyvalue;
 
 import com.distributedkeyvaluestore.client.DynamoClient;
 import com.distributedkeyvaluestore.client.URIHelper;
-import com.distributedkeyvaluestore.consistenthash.HashingManager;
+import com.distributedkeyvaluestore.consistenthash.HashManager;
 import com.distributedkeyvaluestore.models.DynamoNode;
 import com.distributedkeyvaluestore.models.FileWithVectorClock;
 import com.distributedkeyvaluestore.models.Quorum;
@@ -22,19 +22,19 @@ import java.util.stream.Collectors;
 @Component
 public class KeyValueService {
 
-    private final HashingManager<DynamoNode> hashingManager;
+    private final HashManager<DynamoNode> hashManager;
     private final DynamoClient dynamoClient;
     private final TaskExecutor taskExecutor;
 
-    public KeyValueService(HashingManager<DynamoNode> hashingManager, DynamoClient dynamoClient, TaskExecutor taskExecutor) {
-        this.hashingManager = hashingManager;
+    public KeyValueService(HashManager<DynamoNode> hashManager, DynamoClient dynamoClient, TaskExecutor taskExecutor) {
+        this.hashManager = hashManager;
         this.dynamoClient = dynamoClient;
         this.taskExecutor = taskExecutor;
     }
 
     public ResponseEntity<String> store(MultipartFile file) {
         String fileName = file.getOriginalFilename();
-        List<DynamoNode> nodes = hashingManager.getNodes(fileName).stream()
+        List<DynamoNode> nodes = hashManager.getNodes(fileName).stream()
                 .sorted(Comparator.comparing(DynamoNode::getNumber))
                 .collect(Collectors.toList());
 
@@ -159,7 +159,7 @@ public class KeyValueService {
     }
 
     public ResponseEntity<List<FileWithVectorClock>> retrieve(String fileName) {
-        ArrayList<DynamoNode> nodes = hashingManager.getNodes(fileName);
+        ArrayList<DynamoNode> nodes = hashManager.getNodes(fileName);
         Optional<DynamoNode> mayBeFirstNode = nodes.stream().filter(DynamoNode::isCoordinator).findFirst();
         final Map<FileWithVectorClock, DynamoNode> filesWithVectorClocks = Collections.synchronizedMap(new HashMap<>());
         if (mayBeFirstNode.isPresent()) {
