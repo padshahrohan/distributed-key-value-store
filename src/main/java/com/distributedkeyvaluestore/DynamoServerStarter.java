@@ -10,6 +10,8 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
+
 @Component
 public class DynamoServerStarter implements ApplicationListener<ApplicationReadyEvent> {
 
@@ -26,6 +28,7 @@ public class DynamoServerStarter implements ApplicationListener<ApplicationReady
     @Override
     public void onApplicationEvent(@NotNull ApplicationReadyEvent applicationReadyEvent) {
         try {
+            System.out.println(Arrays.toString(appArgs.getSourceArgs()));
             String[] args = appArgs.getSourceArgs()[0].split(",");
             boolean isCoordinator = true;
             for (String arg : args) {

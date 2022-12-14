@@ -1,25 +1,23 @@
 version: "3"
+
 services:
-  one:
+  node-one:
+    image: node-one:1
+    build:
+      context: ./
+      dockerfile: DockerFileNode1
+    volumes:
+      - /data/springboot-docker-compose-app
+    ports:
+      - "172.17.87.180:8080:8080"
     networks:
-      storage-net:
-    image: amazoncorretto:11
-
-  two:
-    networks:
-      storage-net:
-    image: amazoncorretto:11
-
-  three:
-    networks:
-      storage-net:
-    image: amazoncorretto:11
-
-  four:
-    networks:
-      storage-net:
-    image: amazoncorretto:11
+      network:
+        ipv4_address: 10.5.0.5
 
 networks:
-  storage-net:
+  network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+          gateway: 10.5.0.1
