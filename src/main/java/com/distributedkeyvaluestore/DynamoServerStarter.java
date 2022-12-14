@@ -1,6 +1,7 @@
 package com.distributedkeyvaluestore;
 
 import com.distributedkeyvaluestore.client.HealthChecker;
+import com.distributedkeyvaluestore.client.URIHelper;
 import com.distributedkeyvaluestore.consistenthash.HashManager;
 import com.distributedkeyvaluestore.models.DynamoNode;
 import org.jetbrains.annotations.NotNull;
@@ -24,9 +25,6 @@ public class DynamoServerStarter implements ApplicationListener<ApplicationReady
 
     @Override
     public void onApplicationEvent(@NotNull ApplicationReadyEvent applicationReadyEvent) {
-        //TODO: Create Dynamo nodes here from command line args
-        //Ping all nodes to do a health check, if ping does not work properly dont start the app
-        //Initialize hashing manager
         try {
             String[] args = appArgs.getSourceArgs()[0].split(",");
             boolean isCoordinator = true;
@@ -36,12 +34,12 @@ public class DynamoServerStarter implements ApplicationListener<ApplicationReady
                 DynamoNode node = new DynamoNode(address, isCoordinator, Integer.parseInt(nodeNumber));
                 hashManager.addNode(node);
                 if (!node.isCoordinator()) {
-                    //checker.check(URIHelper.createURI(address));
+                    checker.check(URIHelper.createURI(address));
                 }
                 isCoordinator = false;
             }
         } catch (Exception e) {
-            System.out.println("Unable to connect to dynamo nodes");
+            e.printStackTrace();
             System.exit(0);
         }
 

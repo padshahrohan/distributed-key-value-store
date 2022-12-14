@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.net.URI;
 
-@FeignClient(name = "healthChecker", url = "http://localhost:8080")
+@FeignClient(name = "healthChecker", url = "http://this-is-just-a-placeholder")
 public interface HealthChecker {
 
     @GetMapping(value = "/healthCheck")

@@ -12,7 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
 
-@FeignClient(name = "dynamoClient", url = "http://localhost:8080")
+@FeignClient(name = "dynamoClient", url = "http://this-is-just-a-placeholder")
 public interface DynamoClient {
 
     @PostMapping(value = "/object/storeToReplica/{folder}/{vectorClock}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
