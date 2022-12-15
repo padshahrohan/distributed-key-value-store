@@ -237,7 +237,7 @@ public class KeyValueService {
     public FileWithVectorClock retrieveObjectInternal(String folder, String fileName) {
         byte[] file = fetchFile(folder, fileName);
         VectorClock vectorClock = fetchVectorClock(folder, fileName);
-        return new FileWithVectorClock(file, vectorClock);
+        return new FileWithVectorClock(new String(file), vectorClock);
     }
 
     public Map<FileWithVectorClock, DynamoNode> retrieveFromReplicas(String fileName, ArrayList<DynamoNode> nodes, int readQuorum) {
