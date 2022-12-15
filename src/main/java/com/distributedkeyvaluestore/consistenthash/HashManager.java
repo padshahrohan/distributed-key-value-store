@@ -22,6 +22,7 @@ import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -33,9 +34,10 @@ import java.util.TreeMap;
 @Component
 public class HashManager<T extends Node> {
 
-    private final TreeMap<Long, VirtualNode<T>> ring;
+    private final TreeMap<String, VirtualNode<T>> ring;
     private final HashFunction hashFunction;
     private final int vNodeCount;
+    private List<T> allNodes;
 
     public HashManager(@Nonnull HashFunction hashFunction) {
         this.hashFunction = hashFunction;
@@ -58,6 +60,7 @@ public class HashManager<T extends Node> {
             VirtualNode<T> vNode = new VirtualNode<>(pNode, i + existingReplicas);
             ring.put(hashFunction.hash(vNode.getAddress()), vNode);
         }
+        allNodes.add(pNode);
     }
 
     /**
@@ -79,12 +82,12 @@ public class HashManager<T extends Node> {
         if (ring.isEmpty()) {
             return null;
         }
-        Long hash = hashFunction.hash(objectKey);
-        SortedMap<Long, VirtualNode<T>> tailMap = ring.tailMap(hash);
+        String hash = hashFunction.hash(objectKey);
+        SortedMap<String, VirtualNode<T>> tailMap = ring.tailMap(hash);
         ArrayList<T> nodesList = new ArrayList<>();
         int i = 0;
 
-        Long nodeHash = (!tailMap.isEmpty()) ? tailMap.firstKey() : ring.firstKey();
+        String nodeHash = (!tailMap.isEmpty()) ? tailMap.firstKey() : ring.firstKey();
         VirtualNode<T> firstNode = ring.get(nodeHash);
         while (i < Quorum.getReplicas()) {
             VirtualNode<T> node = ring.get(nodeHash);
@@ -124,7 +127,11 @@ public class HashManager<T extends Node> {
         return !ring.isEmpty();
     }
 
-    public TreeMap<Long, VirtualNode<T>> getRing() {
+    public TreeMap<String, VirtualNode<T>> getRing() {
         return ring;
+    }
+
+    public List<T> getAllNodes() {
+        return allNodes;
     }
 }

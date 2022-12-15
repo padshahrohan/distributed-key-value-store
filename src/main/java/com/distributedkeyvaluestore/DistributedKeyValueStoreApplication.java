@@ -6,18 +6,20 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.cloud.openfeign.FeignAutoConfiguration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.util.Properties;
 
 @SpringBootApplication
 @EnableFeignClients
 @ImportAutoConfiguration({FeignAutoConfiguration.class})
+@EnableScheduling
 public class DistributedKeyValueStoreApplication {
 	public static void main(String[] args) {
-		String ipAddress = args[0].split("_")[1];
-		System.out.println(ipAddress);
+//		String ipAddress = args[0].split("_")[1];
+//		System.out.println(ipAddress);
 		Properties properties = new Properties();
-		properties.put("server.address", ipAddress);
+//		properties.put("server.address", ipAddress);
 		new SpringApplicationBuilder(DistributedKeyValueStoreApplication.class).properties(properties).run(args);
 	}
 

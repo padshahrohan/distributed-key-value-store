@@ -10,5 +10,5 @@ public interface HashFunction {
      * @param key the key to be hashed
      * @return the hash value
      */
-    long hash(String key);
+    String hash(String key);
 }

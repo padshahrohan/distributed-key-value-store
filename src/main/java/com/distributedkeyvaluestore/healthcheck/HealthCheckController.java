@@ -1,4 +1,4 @@
-package com.distributedkeyvaluestore;
+package com.distributedkeyvaluestore.healthcheck;
 
 import com.distributedkeyvaluestore.consistenthash.HashManager;
 import com.distributedkeyvaluestore.models.DynamoNode;

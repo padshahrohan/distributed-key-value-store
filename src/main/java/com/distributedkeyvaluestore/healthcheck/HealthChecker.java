@@ -1,4 +1,4 @@
-package com.distributedkeyvaluestore.client;
+package com.distributedkeyvaluestore.healthcheck;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;

@@ -1,7 +1,6 @@
 package com.distributedkeyvaluestore;
 
-import com.distributedkeyvaluestore.client.HealthChecker;
-import com.distributedkeyvaluestore.client.URIHelper;
+import com.distributedkeyvaluestore.healthcheck.HealthChecker;
 import com.distributedkeyvaluestore.consistenthash.HashManager;
 import com.distributedkeyvaluestore.models.DynamoNode;
 import org.jetbrains.annotations.NotNull;
@@ -16,12 +15,10 @@ import java.util.Arrays;
 public class DynamoServerStarter implements ApplicationListener<ApplicationReadyEvent> {
 
     private final ApplicationArguments appArgs;
-    private final HealthChecker checker;
     private final HashManager<DynamoNode> hashManager;
 
-    public DynamoServerStarter(ApplicationArguments appArgs, HealthChecker checker, HashManager<DynamoNode> hashManager) {
+    public DynamoServerStarter(ApplicationArguments appArgs, HashManager<DynamoNode> hashManager) {
         this.appArgs = appArgs;
-        this.checker = checker;
         this.hashManager = hashManager;
     }
 
@@ -36,11 +33,10 @@ public class DynamoServerStarter implements ApplicationListener<ApplicationReady
                 String nodeNumber = arg.split("_")[0];
                 DynamoNode node = new DynamoNode(address, isCoordinator, Integer.parseInt(nodeNumber));
                 hashManager.addNode(node);
-                if (!node.isCoordinator()) {
-                    checker.check(URIHelper.createURI(address));
-                }
                 isCoordinator = false;
             }
+            System.out.println(hashManager.getRing());
+            System.out.println(hashManager.getRing().size());
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(0);

@@ -3,6 +3,7 @@ package com.distributedkeyvaluestore.models;
 public class DynamoNode implements Node {
 
     private final String address;
+    //TODO: Rename this
     private final boolean isCoordinator;
     private final int number;
 
