@@ -28,12 +28,21 @@ public class KeyValueController {
         return keyValueService.retrieve(fileName);
     }
 
+    @PutMapping("/storeToReplica/{folderName}/{vectorIndex}")
+    ResponseEntity<String> storeToReplica(@RequestParam("file") MultipartFile file,
+                                          @PathVariable("folderName") String folderName,
+                                          @PathVariable("vectorIndex") int vectorIndex) {
+        keyValueService.createFile(file, folderName);
+        keyValueService.createVectorClockForFile(file, folderName, vectorIndex);
+        return ResponseEntity.ok("File created successfully");
+    }
+
     @PutMapping("/storeToReplica/{folderName}/{vectorClock}")
     ResponseEntity<String> storeToReplica(@RequestParam("file") MultipartFile file,
                                           @PathVariable("folderName") String folderName,
-                                          @PathVariable("vectorClock") String vectorClockAsString) {
+                                          @PathVariable("vectorClock") String vectorClock) {
         keyValueService.createFile(file, folderName);
-        keyValueService.createVectorClockForFile(file, folderName, vectorClockAsString);
+        keyValueService.createVectorClockForFile(file, folderName, vectorClock);
         return ResponseEntity.ok("File created successfully");
     }
 

@@ -56,6 +56,7 @@ public class HashManager<T extends Node> {
         if (vNodeCount < 0) {
             throw new IllegalArgumentException("Number of virtual nodes cannot be negative!");
         }
+        //TODO: Change name of method
         int existingReplicas = getExistingReplicas(pNode);
         for (int i = 0; i < vNodeCount; i++) {
             VirtualNode<T> vNode = new VirtualNode<>(pNode, i + existingReplicas);

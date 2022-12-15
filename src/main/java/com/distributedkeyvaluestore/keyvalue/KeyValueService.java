@@ -47,11 +47,11 @@ public class KeyValueService {
             if (mayBeFirstNode.isPresent()) {
                 DynamoNode node = mayBeFirstNode.get();
                 int vectorIndex = nodes.indexOf(node);
-                VectorClock vectorClock = storeObjectInternal(file, node, vectorIndex);
+                storeObjectInternal(file, node, vectorIndex);
                 nodes.remove(mayBeFirstNode.get());
                 int writeQuorum = Quorum.getWriteQuorum();
                 writeQuorum--;
-                storeToReplicas(file, nodes, writeQuorum, vectorClock);
+                storeToReplicas(file, nodes, writeQuorum, vectorIndex);
                 return ResponseEntity.ok("Write operation succeeded on node number " + node.getNumber() +
                         " with ip " + node.getAddress());
             } else {
@@ -62,12 +62,12 @@ public class KeyValueService {
         }
     }
 
-    private VectorClock storeObjectInternal(MultipartFile file, DynamoNode node, int vectorIndex) {
+    private void storeObjectInternal(MultipartFile file, DynamoNode node, int vectorIndex) {
         createFile(file, node.getAddress().replaceAll("\\.", "_"));
-        return createVectorClockForFile(file, node.getAddress().replaceAll("\\.", "_"), vectorIndex);
+        createVectorClockForFile(file, node.getAddress().replaceAll("\\.", "_"), vectorIndex);
     }
 
-    public VectorClock createVectorClockForFile(MultipartFile file, String folder, int vectorIndex) {
+    public void createVectorClockForFile(MultipartFile file, String folder, int vectorIndex) {
         File dir = new File(System.getProperty("user.dir") + File.separator + folder);
         File vectorClockData = new File(dir.getAbsolutePath() + File.separator + "vector_clock_" + file.getOriginalFilename());
         try {
@@ -84,7 +84,6 @@ public class KeyValueService {
             vectorClock.incrementClockAtIndex(vectorIndex);
             stream.write(vectorClock.toString().getBytes());
             stream.close();
-            return vectorClock;
         } catch (Exception e) {
             e.printStackTrace();
             throw new WriteException("Vector clock write failed");
@@ -108,15 +107,15 @@ public class KeyValueService {
     }
 
     public void storeToReplicas(MultipartFile file, List<DynamoNode> nodes,
-                                int writeQuorum, VectorClock vectorClock) {
+                                int writeQuorum, int vectorIndex) {
         final CountDownLatch latch = new CountDownLatch(writeQuorum);
         try {
             for (DynamoNode node : nodes) {
                 String folder = node.getAddress().replaceAll("\\.", "_");
                 CompletableFuture.runAsync(() -> {
                     try {
-                        dynamoClient.storeToReplica(URIHelper.createURI(node.getAddress()), file, folder,
-                                vectorClock.toString());
+                        dynamoClient.storeToReplicaUsingVectorIndex(URIHelper.createURI(node.getAddress()), file, folder,
+                                vectorIndex);
                         latch.countDown();
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -124,7 +123,7 @@ public class KeyValueService {
                 }, taskExecutor);
             }
             if (!latch.await(10, TimeUnit.SECONDS)) {
-                throw new WriteException("Write quorum condition failed");
+                throw new WriteException("Write operation failed: Write quorum condition failed");
             }
         } catch (WriteException e) {
             throw e;
@@ -147,7 +146,7 @@ public class KeyValueService {
             stream.write(file.getBytes());
         } catch (Exception e) {
             e.printStackTrace();
-            throw new WriteException("File write failed");
+            throw new WriteException("Write operation failed: File write failed");
         }
     }
 
@@ -160,7 +159,7 @@ public class KeyValueService {
             return bytes;
         } catch (Exception e) {
             e.printStackTrace();
-            throw new ReadException("File read failed");
+            throw new ReadException("Read operation failed: File read failed");
         }
     }
 
@@ -171,7 +170,7 @@ public class KeyValueService {
             return new VectorClock(bufferedReader.readLine());
         } catch (Exception e) {
             e.printStackTrace();
-            throw new ReadException("Reading from vector clock file failed");
+            throw new ReadException("Read operation failed: Reading from vector clock file failed");
         }
     }
 
@@ -230,7 +229,7 @@ public class KeyValueService {
         DynamoNode node = filesWithVectorClocks.get(clockBehind);
         String folder = node.getAddress().replaceAll("\\.", "_");
         MultipartFile file = new CommonMultipartFile(clockAhead.getFile().getBytes(), fileName);
-        dynamoClient.storeToReplica(URIHelper.createURI(node.getAddress()), file, folder,
+        dynamoClient.storeToReplicaUsingVectorClock(URIHelper.createURI(node.getAddress()), file, folder,
                 clockAhead.getVectorClock().toString());
     }
 
