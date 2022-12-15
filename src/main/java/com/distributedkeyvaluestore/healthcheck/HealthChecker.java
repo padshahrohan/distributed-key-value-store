@@ -1,6 +1,7 @@
 package com.distributedkeyvaluestore.healthcheck;
 
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.cloud.openfeign.FeignClientsConfiguration;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,5 +12,5 @@ import java.net.URI;
 public interface HealthChecker {
 
     @GetMapping(value = "/healthCheck")
-    ResponseEntity<Boolean> check(URI baseUrl);
+    ResponseEntity<String> check(URI baseUrl);
 }

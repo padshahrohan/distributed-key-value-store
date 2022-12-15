@@ -25,7 +25,7 @@ public class DynamoServerStarter implements ApplicationListener<ApplicationReady
     @Override
     public void onApplicationEvent(@NotNull ApplicationReadyEvent applicationReadyEvent) {
         try {
-            System.out.println(Arrays.toString(appArgs.getSourceArgs()));
+            System.out.println("Source arguments" + Arrays.toString(appArgs.getSourceArgs()));
             String[] args = appArgs.getSourceArgs()[0].split(",");
             boolean selfAware = true;
             for (String arg : args) {

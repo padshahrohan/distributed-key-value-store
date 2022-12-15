@@ -16,10 +16,7 @@ import java.util.Properties;
 @EnableScheduling
 public class DistributedKeyValueStoreApplication {
 	public static void main(String[] args) {
-//		String ipAddress = args[0].split("_")[1];
-//		System.out.println(ipAddress);
 		Properties properties = new Properties();
-//		properties.put("server.address", ipAddress);
 		new SpringApplicationBuilder(DistributedKeyValueStoreApplication.class).properties(properties).run(args);
 	}
 

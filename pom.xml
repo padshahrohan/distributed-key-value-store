@@ -21,6 +21,14 @@
 		</dependencies>
 	</dependencyManagement>
 
+	<repositories>
+		<repository>
+			<id>repository.spring.milestone</id>
+			<name>Spring milestone</name>
+			<url>https://repo.spring.io/milestone</url>
+		</repository>
+	</repositories>
+
 	<groupId>com</groupId>
 	<artifactId>distributed-key-value-store</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
@@ -29,7 +37,7 @@
 	<properties>
 		<maven.compiler.source>17</maven.compiler.source>
 		<maven.compiler.target>17</maven.compiler.target>
-		<spring-cloud.version>2021.0.5</spring-cloud.version>
+		<spring-cloud.version>2022.0.0-RC3</spring-cloud.version>
 	</properties>
 	<dependencies>
 		<dependency>
