@@ -44,9 +44,6 @@ public class VectorClock implements Comparable<VectorClock> {
         return clockAsString.toString();
     }
 
-    //0 is equal
-    //-1 is small
-    //1 is greater
     @Override
     public int compareTo(@NotNull VectorClock vectorClock) {
         int[] thatClock = vectorClock.getClock();

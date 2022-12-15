@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Component
+//@Component
 public class HealthCheckJob {
 
     private final HashManager<DynamoNode> hashManager;
@@ -20,7 +20,7 @@ public class HealthCheckJob {
         this.healthChecker = healthChecker;
     }
 
-    @Scheduled(initialDelay = 30000, fixedDelay = 30000)
+//    @Scheduled(initialDelay = 30000, fixedDelay = 30000)
     public void doHealthCheck() {
         List<DynamoNode> allNodes = hashManager.getAllNodes();
 

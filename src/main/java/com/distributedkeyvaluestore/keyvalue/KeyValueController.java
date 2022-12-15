@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.util.List;
 
 @RestController
@@ -37,8 +38,8 @@ public class KeyValueController {
     }
 
     @GetMapping("/retrieveFromReplica/{folder}/{fileName}")
-    ResponseEntity<byte[]> retrieveFromReplica(@PathVariable("folder") String folder,
-                                               @PathVariable("fileName") String fileName) {
-        return ResponseEntity.ok(keyValueService.fetchFile(folder, fileName));
+    ResponseEntity<FileWithVectorClock> retrieveFromReplica(@PathVariable("folder") String folder,
+                                             @PathVariable("fileName") String fileName) {
+        return ResponseEntity.ok(keyValueService.retrieveObjectInternal(folder, fileName));
     }
 }
