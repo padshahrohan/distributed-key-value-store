@@ -4,22 +4,22 @@ public class DynamoNode implements Node {
 
     private final String address;
     //TODO: Rename this
-    private final boolean isCoordinator;
+    private final boolean selfAware;
     private final int number;
 
-    public DynamoNode(String address, boolean isCoordinator, int number) {
+    public DynamoNode(String address, boolean selfAware, int number) {
         this.number = number;
         ;
         this.address = address;
-        this.isCoordinator = isCoordinator;
+        this.selfAware = selfAware;
     }
 
     public String getAddress() {
         return address;
     }
 
-    public boolean isCoordinator() {
-        return isCoordinator;
+    public boolean isSelfAware() {
+        return selfAware;
     }
 
     public int getNumber() {

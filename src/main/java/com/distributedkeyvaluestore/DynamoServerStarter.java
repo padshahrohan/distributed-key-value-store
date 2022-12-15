@@ -27,13 +27,13 @@ public class DynamoServerStarter implements ApplicationListener<ApplicationReady
         try {
             System.out.println(Arrays.toString(appArgs.getSourceArgs()));
             String[] args = appArgs.getSourceArgs()[0].split(",");
-            boolean isCoordinator = true;
+            boolean selfAware = true;
             for (String arg : args) {
                 String address = arg.split("_")[1];
                 String nodeNumber = arg.split("_")[0];
-                DynamoNode node = new DynamoNode(address, isCoordinator, Integer.parseInt(nodeNumber));
+                DynamoNode node = new DynamoNode(address, selfAware, Integer.parseInt(nodeNumber));
                 hashManager.addNode(node);
-                isCoordinator = false;
+                selfAware = false;
             }
             System.out.println(hashManager.getRing());
             System.out.println(hashManager.getRing().size());

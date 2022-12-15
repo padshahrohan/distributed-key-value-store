@@ -6,10 +6,43 @@ services:
     build:
       context: ./
       dockerfile: DockerFileNode1
-    volumes:
-      - /data/springboot-docker-compose-app
+#    volumes:
+#      - /data/springboot-docker-compose-app
     ports:
       - "172.17.87.180:8080:8080"
+    networks:
+      network:
+        ipv4_address: 10.5.0.2
+
+  node-two:
+    image: node-two:1
+    build:
+      context: ./
+      dockerfile: DockerFileNode2
+    ports:
+      - "172.17.87.180:8081:8080"
+    networks:
+      network:
+        ipv4_address: 10.5.0.3
+
+  node-three:
+    image: node-three:1
+    build:
+      context: ./
+      dockerfile: DockerFileNode3
+    ports:
+      - "172.17.87.180:8082:8080"
+    networks:
+      network:
+        ipv4_address: 10.5.0.4
+
+  node-four:
+    image: node-four:1
+    build:
+      context: ./
+      dockerfile: DockerFileNode4
+    ports:
+      - "172.17.87.180:8083:8080"
     networks:
       network:
         ipv4_address: 10.5.0.5

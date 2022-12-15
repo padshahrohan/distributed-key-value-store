@@ -9,7 +9,6 @@ import java.util.List;
 
 public class HealthCheckJob {
 
-
     private final HashManager<DynamoNode> hashManager;
     private final HealthChecker healthChecker;
 
@@ -23,9 +22,14 @@ public class HealthCheckJob {
         List<DynamoNode> allNodes = hashManager.getAllNodes();
 
         allNodes.forEach(node -> {
-            if (!node.isCoordinator()) {
-                healthChecker.check(URIHelper.createURI(node.getAddress()));
+            try {
+                if (!node.isSelfAware()) {
+                    healthChecker.check(URIHelper.createURI(node.getAddress()));
+                }
+            } catch (Exception e) {
+                System.out.println("Node with ip : " + node.getAddress() +" is down");
             }
+
         });
     }
 

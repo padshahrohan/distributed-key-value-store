@@ -42,6 +42,7 @@ public class HashManager<T extends Node> {
     public HashManager(@Nonnull HashFunction hashFunction) {
         this.hashFunction = hashFunction;
         this.ring = new TreeMap<>();
+        this.allNodes = new ArrayList<>();
 
         this.vNodeCount = 100;
     }
