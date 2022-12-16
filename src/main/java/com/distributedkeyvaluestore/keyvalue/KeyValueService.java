@@ -177,44 +177,44 @@ public class KeyValueService {
     public ResponseEntity<List<FileWithVectorClock>> retrieve(String fileName) {
         ArrayList<DynamoNode> nodes = hashManager.getNodes(fileName);
         Optional<DynamoNode> mayBeFirstNode = nodes.stream().filter(DynamoNode::isSelfAware).findFirst();
-        final Map<FileWithVectorClock, DynamoNode> filesWithVectorClocks = Collections.synchronizedMap(new HashMap<>());
+        final Map<FileWithVectorClock, DynamoNode> fileWithVectorClockToNode = Collections.synchronizedMap(new HashMap<>());
         try {
             if (mayBeFirstNode.isPresent()) {
                 DynamoNode node = mayBeFirstNode.get();
                 String folder = node.getAddress().replaceAll("\\.", "_");
                 FileWithVectorClock fileWithVectorClock = retrieveObjectInternal(folder, fileName);
-                filesWithVectorClocks.put(fileWithVectorClock, node);
+                fileWithVectorClockToNode.put(fileWithVectorClock, node);
                 System.out.println("Vector clock from own " + fileWithVectorClock);
                 nodes.remove(node);
                 int readQuorum = Quorum.getReadQuorum();
                 readQuorum--;
-                filesWithVectorClocks.putAll(retrieveFromReplicas(fileName, nodes, readQuorum));
+                fileWithVectorClockToNode.putAll(retrieveFromReplicas(fileName, nodes, readQuorum));
 
             } else {
-                filesWithVectorClocks.putAll(retrieveFromReplicas(fileName, nodes, Quorum.getReadQuorum()));
+                fileWithVectorClockToNode.putAll(retrieveFromReplicas(fileName, nodes, Quorum.getReadQuorum()));
             }
         } catch (ReadException e) {
             throw e;
         }
 
-        System.out.println("Before sort" + filesWithVectorClocks);
+        System.out.println("Before sort" + fileWithVectorClockToNode);
 
-        List<FileWithVectorClock> fileWithVectorClocks = ensureEventualConsistency(fileName, filesWithVectorClocks);
+        List<FileWithVectorClock> fileWithVectorClocks = ensureEventualConsistency(fileName, fileWithVectorClockToNode);
         return ResponseEntity.ok(fileWithVectorClocks);
     }
 
     @NotNull
-    private List<FileWithVectorClock> ensureEventualConsistency(String fileName, Map<FileWithVectorClock, DynamoNode> filesWithVectorClocks) {
-        List<FileWithVectorClock> vectorClocks = filesWithVectorClocks.keySet().stream().toList();
-        System.out.println("File clock" + filesWithVectorClocks);
+    private List<FileWithVectorClock> ensureEventualConsistency(String fileName, Map<FileWithVectorClock, DynamoNode> fileWithVectorClockToNode) {
+        List<FileWithVectorClock> vectorClocks = fileWithVectorClockToNode.keySet().stream().toList();
+        System.out.println("File clock" + fileWithVectorClockToNode);
 
         try {
             FileWithVectorClock clockOne = vectorClocks.get(0);
             FileWithVectorClock clockTwo = vectorClocks.get(1);
             if (clockOne.getVectorClock().compareTo(clockTwo.getVectorClock()) < 0) {
-                updateNodesLaggingBehind(fileName, filesWithVectorClocks, clockTwo, clockOne);
+                updateNodesLaggingBehind(fileName, fileWithVectorClockToNode, clockTwo, clockOne);
             } else if (clockOne.getVectorClock().compareTo(clockTwo.getVectorClock()) > 0) {
-                updateNodesLaggingBehind(fileName, filesWithVectorClocks, clockOne, clockTwo);
+                updateNodesLaggingBehind(fileName, fileWithVectorClockToNode, clockOne, clockTwo);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -224,9 +224,9 @@ public class KeyValueService {
         return vectorClocks;
     }
 
-    private void updateNodesLaggingBehind(String fileName, Map<FileWithVectorClock, DynamoNode> filesWithVectorClocks,
+    private void updateNodesLaggingBehind(String fileName, Map<FileWithVectorClock, DynamoNode> fileWithVectorClockToNode,
                                           FileWithVectorClock clockAhead, FileWithVectorClock clockBehind) {
-        DynamoNode node = filesWithVectorClocks.get(clockBehind);
+        DynamoNode node = fileWithVectorClockToNode.get(clockBehind);
         String folder = node.getAddress().replaceAll("\\.", "_");
         MultipartFile file = new CommonMultipartFile(clockAhead.getFile().getBytes(), fileName);
         dynamoClient.storeToReplicaUsingVectorClock(URIHelper.createURI(node.getAddress()), file, folder,
@@ -234,25 +234,28 @@ public class KeyValueService {
     }
 
     public FileWithVectorClock retrieveObjectInternal(String folder, String fileName) {
-        byte[] file = fetchFile(folder, fileName);
-        VectorClock vectorClock = fetchVectorClock(folder, fileName);
-        return new FileWithVectorClock(new String(file), vectorClock);
+        Optional<DynamoNode> node = hashManager.getAllNodes().stream().filter(DynamoNode::isSelfAware).findFirst();
+
+        if (node.isPresent()) {
+            byte[] file = fetchFile(folder, fileName);
+            VectorClock vectorClock = fetchVectorClock(folder, fileName);
+            return new FileWithVectorClock(new String(file), vectorClock, node.get().getAddress());
+        }
+
+        throw new ReadException("Read operation failed: Unable to retrieve file with vector clock");
     }
 
     public Map<FileWithVectorClock, DynamoNode> retrieveFromReplicas(String fileName, ArrayList<DynamoNode> nodes, int readQuorum) {
 
         final CountDownLatch latch = new CountDownLatch(readQuorum);
         try {
-            final Map<FileWithVectorClock, DynamoNode> files = Collections.synchronizedMap(new HashMap<>());
+            final Map<FileWithVectorClock, DynamoNode> fileWithVectorClockToNode = Collections.synchronizedMap(new HashMap<>());
             for (DynamoNode node : nodes) {
                 CompletableFuture.runAsync(() -> {
                     try {
                         String folder = node.getAddress().replaceAll("\\.", "_");
                         ResponseEntity<FileWithVectorClock> fileWithVectorClockResponseEntity = dynamoClient.retrieveFromReplica(URIHelper.createURI(node.getAddress()), folder, fileName);
-                        FileWithVectorClock fileWithVectorClock = fileWithVectorClockResponseEntity.getBody();
-                        assert fileWithVectorClock != null;
-                        fileWithVectorClock.setNode(node.getAddress());
-                        files.put(fileWithVectorClock, node);
+                        fileWithVectorClockToNode.put(fileWithVectorClockResponseEntity.getBody(), node);
                         latch.countDown();
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -262,7 +265,7 @@ public class KeyValueService {
             if (!latch.await(10, TimeUnit.SECONDS)) {
                 throw new ReadException("Read quorum condition failed");
             }
-            return files;
+            return fileWithVectorClockToNode;
         } catch (ReadException e) {
             throw e;
         } catch (Exception e) {
