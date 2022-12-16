@@ -17,12 +17,12 @@ import java.net.URI;
 @FeignClient(name = "dynamoClient", url = "http://this-is-just-a-placeholder")
 public interface DynamoClient {
 
-    @PutMapping(value = "/object/storeToReplica/{folder}/{vectorIndex}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(value = "/object/storeToReplicaUsingVectorIndex/{folder}/{vectorIndex}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     void storeToReplicaUsingVectorIndex(URI baseUrl, @Param("file") MultipartFile file,
                         @PathVariable("folder") String folder,
                         @PathVariable("vectorIndex") int vectorIndex);
 
-    @PutMapping(value = "/object/storeToReplica/{folder}/{vectorClock}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(value = "/object/storeToReplicaUsingVectorClock/{folder}/{vectorClock}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     void storeToReplicaUsingVectorClock(URI baseUrl, @Param("file") MultipartFile file,
                         @PathVariable("folder") String folder,
                         @PathVariable("vectorClock") String vectorClock);

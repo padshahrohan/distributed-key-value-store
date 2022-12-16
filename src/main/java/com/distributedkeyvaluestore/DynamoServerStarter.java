@@ -34,6 +34,7 @@ public class DynamoServerStarter implements ApplicationListener<ApplicationReady
 
                 if (i == 0) {
                     int replicas = Integer.parseInt(args[i]);
+                    System.out.println("Replicas"+ replicas);
                     if (replicas <= args.length - 1) {
                         Quorum.setReplicas(replicas);
                     } else {
