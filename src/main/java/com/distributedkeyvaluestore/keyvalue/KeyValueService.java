@@ -5,6 +5,7 @@ import com.distributedkeyvaluestore.client.URIHelper;
 import com.distributedkeyvaluestore.consistenthash.HashManager;
 import com.distributedkeyvaluestore.exception.ConsistencyException;
 import com.distributedkeyvaluestore.exception.ReadException;
+import com.distributedkeyvaluestore.exception.RingEmptyException;
 import com.distributedkeyvaluestore.exception.WriteException;
 import com.distributedkeyvaluestore.models.DynamoNode;
 import com.distributedkeyvaluestore.models.FileWithVectorClock;
@@ -37,13 +38,13 @@ public class KeyValueService {
     }
 
     public ResponseEntity<String> store(MultipartFile file) {
-        String fileName = file.getOriginalFilename();
-        List<DynamoNode> nodes = hashManager.getNodes(fileName).stream()
-                .sorted(Comparator.comparing(DynamoNode::getNumber))
-                .collect(Collectors.toList());
-
-        Optional<DynamoNode> mayBeFirstNode = nodes.stream().filter(DynamoNode::isSelfAware).findFirst();
         try {
+            String fileName = file.getOriginalFilename();
+            List<DynamoNode> nodes = hashManager.getNodes(fileName).stream()
+                    .sorted(Comparator.comparing(DynamoNode::getNumber))
+                    .collect(Collectors.toList());
+
+            Optional<DynamoNode> mayBeFirstNode = nodes.stream().filter(DynamoNode::isSelfAware).findFirst();
             if (mayBeFirstNode.isPresent()) {
                 DynamoNode node = mayBeFirstNode.get();
                 int vectorIndex = nodes.indexOf(node);
@@ -57,8 +58,11 @@ public class KeyValueService {
             } else {
                 return forwardToNode(file, nodes.get(0));
             }
-        } catch (WriteException e) {
-            throw e;
+        } catch (RingEmptyException e) {
+          throw new WriteException("Write operation failed, " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new WriteException("Write operation failed, " + e.getMessage());
         }
     }
 
@@ -175,10 +179,11 @@ public class KeyValueService {
     }
 
     public ResponseEntity<List<FileWithVectorClock>> retrieve(String fileName) {
-        ArrayList<DynamoNode> nodes = hashManager.getNodes(fileName);
-        Optional<DynamoNode> mayBeFirstNode = nodes.stream().filter(DynamoNode::isSelfAware).findFirst();
-        final Map<FileWithVectorClock, DynamoNode> fileWithVectorClockToNode = Collections.synchronizedMap(new HashMap<>());
         try {
+            ArrayList<DynamoNode> nodes = hashManager.getNodes(fileName);
+            Optional<DynamoNode> mayBeFirstNode = nodes.stream().filter(DynamoNode::isSelfAware).findFirst();
+            final Map<FileWithVectorClock, DynamoNode> fileWithVectorClockToNode = Collections.synchronizedMap(new HashMap<>());
+
             if (mayBeFirstNode.isPresent()) {
                 DynamoNode node = mayBeFirstNode.get();
                 String folder = node.getAddress().replaceAll("\\.", "_");
@@ -193,24 +198,26 @@ public class KeyValueService {
             } else {
                 fileWithVectorClockToNode.putAll(retrieveFromReplicas(fileName, nodes, Quorum.getReadQuorum()));
             }
-        } catch (ReadException e) {
-            throw e;
+            System.out.println("Before sort" + fileWithVectorClockToNode);
+
+            List<FileWithVectorClock> fileWithVectorClocks = ensureEventualConsistency(fileName, fileWithVectorClockToNode);
+            return ResponseEntity.ok(fileWithVectorClocks);
+        } catch (RingEmptyException e) {
+            throw new ReadException("Read operation failed, " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new ReadException("Read operation failed, " + e.getMessage());
         }
-
-        System.out.println("Before sort" + fileWithVectorClockToNode);
-
-        List<FileWithVectorClock> fileWithVectorClocks = ensureEventualConsistency(fileName, fileWithVectorClockToNode);
-        return ResponseEntity.ok(fileWithVectorClocks);
     }
 
     @NotNull
     private List<FileWithVectorClock> ensureEventualConsistency(String fileName, Map<FileWithVectorClock, DynamoNode> fileWithVectorClockToNode) {
-        List<FileWithVectorClock> vectorClocks = fileWithVectorClockToNode.keySet().stream().toList();
+        List<FileWithVectorClock> fileWithVectorClocks = fileWithVectorClockToNode.keySet().stream().toList();
         System.out.println("File clock" + fileWithVectorClockToNode);
 
         try {
-            FileWithVectorClock clockOne = vectorClocks.get(0);
-            FileWithVectorClock clockTwo = vectorClocks.get(1);
+            FileWithVectorClock clockOne = fileWithVectorClocks.get(0);
+            FileWithVectorClock clockTwo = fileWithVectorClocks.get(1);
             if (clockOne.getVectorClock().compareTo(clockTwo.getVectorClock()) < 0) {
                 updateNodesLaggingBehind(fileName, fileWithVectorClockToNode, clockTwo, clockOne);
             } else if (clockOne.getVectorClock().compareTo(clockTwo.getVectorClock()) > 0) {
@@ -218,10 +225,10 @@ public class KeyValueService {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            throw new ConsistencyException(vectorClocks);
+            throw new ConsistencyException(fileWithVectorClocks);
         }
 
-        return vectorClocks;
+        return fileWithVectorClocks;
     }
 
     private void updateNodesLaggingBehind(String fileName, Map<FileWithVectorClock, DynamoNode> fileWithVectorClockToNode,

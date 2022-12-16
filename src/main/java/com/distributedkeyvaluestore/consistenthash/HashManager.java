@@ -16,6 +16,7 @@
  */
 package com.distributedkeyvaluestore.consistenthash;
 
+import com.distributedkeyvaluestore.exception.RingEmptyException;
 import com.distributedkeyvaluestore.models.Node;
 import com.distributedkeyvaluestore.models.Quorum;
 import jakarta.annotation.Nonnull;
@@ -48,30 +49,16 @@ public class HashManager<T extends Node> {
     }
 
     /**
-     * Adds a new physical node to the hash ring, with specified number of replicas
+     * Adds a new physical node to the hash ring, with 100 virtual nodes
      *
      * @param pNode the physical node to be added to the ring
      */
     public void addNode(T pNode) {
-        if (vNodeCount < 0) {
-            throw new IllegalArgumentException("Number of virtual nodes cannot be negative!");
-        }
-        //TODO: Change name of method
-        int existingReplicas = getExistingReplicas(pNode);
         for (int i = 0; i < vNodeCount; i++) {
-            VirtualNode<T> vNode = new VirtualNode<>(pNode, i + existingReplicas);
+            VirtualNode<T> vNode = new VirtualNode<>(pNode, i);
             ring.put(hashFunction.hash(vNode.getAddress()), vNode);
         }
         allNodes.add(pNode);
-    }
-
-    /**
-     * Removes a physical node completely from the hash ring
-     *
-     * @param pNode the physical node to be removed form the hash ring
-     */
-    public void removeNode(T pNode) {
-        ring.keySet().removeIf(key -> ring.get(key).isVirtualNodeOf(pNode));
     }
 
     /**
@@ -82,7 +69,7 @@ public class HashManager<T extends Node> {
      */
     public ArrayList<T> getNodes(@Nonnull String objectKey) {
         if (ring.isEmpty()) {
-            return null;
+            throw new RingEmptyException("Hash ring is empty");
         }
         String hash = hashFunction.hash(objectKey);
         SortedMap<String, VirtualNode<T>> tailMap = ring.tailMap(hash);
@@ -108,24 +95,7 @@ public class HashManager<T extends Node> {
         return nodesList;
     }
 
-    /**
-     * Returns the number of existing replicas of a physical node
-     *
-     * @param pNode the physical node whose number of replicas is required
-     * @return (int) the number of existing replicas of the given physical node
-     */
-    private int getExistingReplicas(T pNode) {
-        int replicas = 0;
-        for (VirtualNode<T> vNode : ring.values()) {
-            if (vNode.isVirtualNodeOf(pNode)) {
-                replicas++;
-            }
-        }
-        return replicas;
-    }
-
     public boolean isRingCreated() {
-        //TODO finalize health check definition
         return !ring.isEmpty();
     }
 

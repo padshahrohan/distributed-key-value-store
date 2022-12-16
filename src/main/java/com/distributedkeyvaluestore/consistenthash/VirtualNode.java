@@ -11,11 +11,11 @@ import com.distributedkeyvaluestore.models.Node;
 public class VirtualNode<T extends Node> implements Node {
 
     private final T physicalNode;
-    private final int replicaIndex;
+    private final int virtualNodeNumber;
 
-    public VirtualNode(T physicalNode, int replicaIndex) {
+    public VirtualNode(T physicalNode, int virtualNodeNumber) {
         this.physicalNode = physicalNode;
-        this.replicaIndex = replicaIndex;
+        this.virtualNodeNumber = virtualNodeNumber;
     }
 
     /**
@@ -23,7 +23,7 @@ public class VirtualNode<T extends Node> implements Node {
      */
     @Override
     public String getAddress() {
-        return physicalNode.getAddress() + "-" + replicaIndex;
+        return physicalNode.getAddress() + "-" + virtualNodeNumber;
     }
 
     /**
