@@ -224,7 +224,7 @@ public class KeyValueService {
             FileWithVectorClock latest = fileWithVectorClocks.get(size - 1);
             List<DynamoNode> nodesLaggingBehind = new ArrayList<>();
 
-            int i = size - 1;
+            int i = size - 2;
             while (i >= 0) {
                 FileWithVectorClock fileWithVectorClock = fileWithVectorClocks.get(i);
                 if (fileWithVectorClock.getVectorClock().compareTo(latest.getVectorClock()) < 0) {
