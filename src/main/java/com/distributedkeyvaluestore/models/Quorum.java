@@ -5,6 +5,18 @@ package com.distributedkeyvaluestore.models;
  */
 public class Quorum {
 
+    private static int replicas;
+
+    private Quorum() {
+
+    }
+
+    public static void setReplicas(int r) {
+        if (replicas == 0) {
+            replicas = r;
+        }
+    }
+
     /**
      * Method to return the number of nodes into which
      * an object is to be hashed (and read from)
@@ -12,7 +24,7 @@ public class Quorum {
      * @return no. of nodes into which an object is attempted to be hashed
      */
     public static int getReplicas() {
-        return 3;
+        return replicas;
     }
 
     /**
@@ -22,7 +34,7 @@ public class Quorum {
      * @return read quorum
      */
     public static int getReadQuorum() {
-        return 2;
+        return replicas - 1;
     }
 
     /**
@@ -32,6 +44,6 @@ public class Quorum {
      * @return write quorum
      */
     public static int getWriteQuorum() {
-        return 2;
+        return replicas - 1;
     }
 }

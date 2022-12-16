@@ -3,6 +3,7 @@ package com.distributedkeyvaluestore;
 import com.distributedkeyvaluestore.healthcheck.HealthChecker;
 import com.distributedkeyvaluestore.consistenthash.HashManager;
 import com.distributedkeyvaluestore.models.DynamoNode;
+import com.distributedkeyvaluestore.models.Quorum;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -28,7 +29,18 @@ public class DynamoServerStarter implements ApplicationListener<ApplicationReady
             System.out.println("Source arguments" + Arrays.toString(appArgs.getSourceArgs()));
             String[] args = appArgs.getSourceArgs()[0].split(",");
             boolean selfAware = true;
-            for (String arg : args) {
+            for (int i = 0; i < args.length; i++) {
+                String arg = args[i];
+
+                if (i == 0) {
+                    int replicas = Integer.parseInt(args[i]);
+                    if (replicas <= args.length - 1) {
+                        Quorum.setReplicas(replicas);
+                    } else {
+                        throw new IllegalArgumentException("Replicas should be less than number of nodes");
+                    }
+                    continue;
+                }
                 String address = arg.split("_")[1];
                 String nodeNumber = arg.split("_")[0];
                 DynamoNode node = new DynamoNode(address, selfAware, Integer.parseInt(nodeNumber));

@@ -216,17 +216,23 @@ public class KeyValueService {
 
     @NotNull
     private List<FileWithVectorClock> ensureEventualConsistency(String fileName, Map<FileWithVectorClock, DynamoNode> fileWithVectorClockToNode) {
-        List<FileWithVectorClock> fileWithVectorClocks = fileWithVectorClockToNode.keySet().stream().toList();
+        List<FileWithVectorClock> fileWithVectorClocks = fileWithVectorClockToNode.keySet().stream()
+                .sorted(Comparator.comparing(FileWithVectorClock::getVectorClock)).toList();
         System.out.println("File clock" + fileWithVectorClockToNode);
-
         try {
-            FileWithVectorClock clockOne = fileWithVectorClocks.get(0);
-            FileWithVectorClock clockTwo = fileWithVectorClocks.get(1);
-            if (clockOne.getVectorClock().compareTo(clockTwo.getVectorClock()) < 0) {
-                updateNodesLaggingBehind(fileName, fileWithVectorClockToNode, clockTwo, clockOne);
-            } else if (clockOne.getVectorClock().compareTo(clockTwo.getVectorClock()) > 0) {
-                updateNodesLaggingBehind(fileName, fileWithVectorClockToNode, clockOne, clockTwo);
+            int size = fileWithVectorClocks.size();
+            FileWithVectorClock latest = fileWithVectorClocks.get(size - 1);
+            List<DynamoNode> nodesLaggingBehind = new ArrayList<>();
+
+            int i = size - 1;
+            while (i >= 0) {
+                FileWithVectorClock fileWithVectorClock = fileWithVectorClocks.get(i);
+                if (fileWithVectorClock.getVectorClock().compareTo(latest.getVectorClock()) < 0) {
+                    nodesLaggingBehind.add(fileWithVectorClockToNode.get(fileWithVectorClock));
+                }
+                i--;
             }
+            updateNodesLaggingBehind(fileName, latest, nodesLaggingBehind);
         } catch (Exception e) {
             e.printStackTrace();
             throw new ConsistencyException(fileWithVectorClocks);
@@ -235,13 +241,14 @@ public class KeyValueService {
         return fileWithVectorClocks;
     }
 
-    private void updateNodesLaggingBehind(String fileName, Map<FileWithVectorClock, DynamoNode> fileWithVectorClockToNode,
-                                          FileWithVectorClock clockAhead, FileWithVectorClock clockBehind) {
-        DynamoNode node = fileWithVectorClockToNode.get(clockBehind);
-        String folder = node.getAddress().replaceAll("\\.", "_");
-        MultipartFile file = new CommonMultipartFile(clockAhead.getFile().getBytes(), fileName);
-        dynamoClient.storeToReplicaUsingVectorClock(URIHelper.createURI(node.getAddress()), file, folder,
-                clockAhead.getVectorClock().toString());
+    private void updateNodesLaggingBehind(String fileName, FileWithVectorClock clockAhead,
+                                          List<DynamoNode> nodesLaggingBehind) {
+        for (DynamoNode node : nodesLaggingBehind) {
+            String folder = node.getAddress().replaceAll("\\.", "_");
+            MultipartFile file = new CommonMultipartFile(clockAhead.getFile().getBytes(), fileName);
+            dynamoClient.storeToReplicaUsingVectorClock(URIHelper.createURI(node.getAddress()), file, folder,
+                    clockAhead.getVectorClock().toString());
+        }
     }
 
     public FileWithVectorClock retrieveObjectInternal(String folder, String fileName) {
