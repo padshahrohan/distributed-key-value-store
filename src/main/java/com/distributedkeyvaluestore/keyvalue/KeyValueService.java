@@ -60,6 +60,8 @@ public class KeyValueService {
             }
         } catch (RingEmptyException e) {
           throw new WriteException("Write operation failed, " + e.getMessage());
+        } catch (WriteException e) {
+          throw e;
         } catch (Exception e) {
             e.printStackTrace();
             throw new WriteException("Write operation failed, " + e.getMessage());
@@ -204,6 +206,8 @@ public class KeyValueService {
             return ResponseEntity.ok(fileWithVectorClocks);
         } catch (RingEmptyException e) {
             throw new ReadException("Read operation failed, " + e.getMessage());
+        } catch (ReadException e) {
+            throw e;
         } catch (Exception e) {
             e.printStackTrace();
             throw new ReadException("Read operation failed, " + e.getMessage());
