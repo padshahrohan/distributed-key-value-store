@@ -34,7 +34,7 @@ public class Quorum {
      * @return read quorum
      */
     public static int getReadQuorum() {
-        return replicas - 1;
+        return (replicas/2) + 1;
     }
 
     /**
@@ -44,6 +44,6 @@ public class Quorum {
      * @return write quorum
      */
     public static int getWriteQuorum() {
-        return replicas - 1;
+        return (replicas/2) + 1;
     }
 }
